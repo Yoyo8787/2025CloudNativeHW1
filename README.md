@@ -58,7 +58,7 @@ CloudShop 是一個簡單的線上市場平台，允許用戶進行商品買賣�
     - 創建商品：
 
         ```bash
-        # CREATE_LISTING Alice "Phone" "Brand new" 800 "Electronics"
+        # CREATE_LISTING Alice 'Phone' 'Brand new' 800 'Electronics'
         100001
         ```
 
@@ -79,7 +79,7 @@ CloudShop 是一個簡單的線上市場平台，允許用戶進行商品買賣�
     - 查詢分類商品：
 
         ```bash
-        # GET_CATEGORY Alice "Electronics"
+        # GET_CATEGORY Alice 'Electronics'
         Phone|Brand new|800|2025-03-12 14:00:00|Electronics|Alice
         ```
 
