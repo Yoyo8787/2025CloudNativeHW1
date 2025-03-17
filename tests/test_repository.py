@@ -50,7 +50,7 @@ class TestCategoryRepository(unittest.TestCase):
         self.category_repo.add_listing_to_category("Electronics", 100001, "2025-03-12 14:00:00")
         self.category_repo.add_listing_to_category("Sports", 100002, "2025-03-12 15:00:00")
         self.category_repo.add_listing_to_category("Sports", 100003, "2025-03-12 16:00:00")
-        self.assertEqual(self.category_repo.get_top_category(), "Sports")
+        self.assertEqual(self.category_repo.get_top_category(), ['Sports'])
 
 
 

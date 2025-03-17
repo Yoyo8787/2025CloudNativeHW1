@@ -28,5 +28,18 @@ class ListingService:
         return f"{listing['title']}|{listing['description']}|{listing['price']}|{listing['created_at']}|{listing['category']}|{listing['username']}"
 
     def delete_listing(self, username, listing_id):
-        """刪除商品（檢查擁有權）"""
-        return self.listing_repo.delete_listing(username, listing_id)
+        """刪除商品（檢查擁有權）並處理商品分類更新"""
+        if not self.user_service.validate_user(username):
+            return "Error - user not found"
+        
+        listing = self.listing_repo.get_listing(listing_id)
+        if not listing:
+            return "Error - listing not found"
+        
+        if listing["username"] != username:
+            return "Error - listing owner mismatch"
+        
+        self.listing_repo.delete_listing(username, listing_id)
+
+        self.category_service.remove_listing_from_category(listing["category"], listing_id)
+        return "Success"

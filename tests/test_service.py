@@ -4,14 +4,17 @@ from datetime import datetime
 from src.services.user_service import UserService
 from src.services.listing_service import ListingService
 from src.services.category_service import CategoryService
+from src.repositories.user_repository import UserRepository
+from src.repositories.listing_repository import ListingRepository
+from src.repositories.category_repository import CategoryRepository
 
 class TestServices(unittest.TestCase):
     
     def setUp(self):
         # 初始化 Repository
-        self.user_repo = Mock()
-        self.listing_repo = Mock()
-        self.category_repo = Mock()
+        self.user_repo = Mock(spec=UserRepository)
+        self.listing_repo = Mock(spec=ListingRepository)
+        self.category_repo = Mock(spec=CategoryRepository)
 
         # 初始化服務
         self.user_service = UserService(self.user_repo)
@@ -77,19 +80,44 @@ class TestServices(unittest.TestCase):
         self.assertIn("Phone|New model|800", result)  # 應包含商品資訊
     
     
+    def test_delete_listing_owner_mismatch(self):
+        # 模擬用戶存在，但不是商品的擁有者
+        self.user_service.validate_user.return_value = True
+
+        # 模擬商品資料
+        listing = {
+            "title": "Phone",
+            "description": "New model",
+            "price": 800,
+            "created_at": "2025-03-12 21:52:20",
+            "category": "Electronics",
+            "username": "Bob"  # 商品的擁有者是 "Bob"
+        }
+        self.listing_repo.get_listing.return_value = listing  # 返回模擬商品
+
+        result = self.listing_service.delete_listing("Alice", 100001)  # "Alice" 嘗試刪除商品
+        self.assertEqual(result, "Error - listing owner mismatch")  # 預期返回錯誤：擁有者不匹配
+
     def test_delete_listing_success(self):
         # 模擬用戶存在且是商品的擁有者
         self.user_service.validate_user.return_value = True
-        self.listing_repo.delete_listing.return_value = "Success"  # 模擬刪除成功
-        result = self.listing_service.delete_listing("Alice", 100001)
-        self.assertEqual(result, "Success")  # 應返回 "Success"
-    
-    def test_delete_listing_owner_mismatch(self):
-        # 模擬用戶不是商品的擁有者
-        self.user_service.validate_user.return_value = True
-        self.listing_repo.delete_listing.return_value = "Error - listing owner mismatch"  # 模擬錯誤
-        result = self.listing_service.delete_listing("Alice", 100001)
-        self.assertEqual(result, "Error - listing owner mismatch")  # 應返回錯誤訊息
+
+        # 模擬商品資料
+        listing = {
+            "title": "Phone",
+            "description": "New model",
+            "price": 800,
+            "created_at": "2025-03-12 21:52:20",
+            "category": "Electronics",
+            "username": "Alice"  # 商品的擁有者是 "Alice"
+        }
+        self.listing_repo.get_listing.return_value = listing  # 返回模擬商品
+
+        # 模擬商品刪除成功
+        self.listing_repo.delete_listing.return_value = "Success"
+        
+        result = self.listing_service.delete_listing("Alice", 100001)  # "Alice" 嘗試刪除商品
+        self.assertEqual(result, "Success")  # 預期刪除成功
 
     # 測試 CategoryService
     def test_get_category_listings_user_not_found(self):
@@ -116,12 +144,40 @@ class TestServices(unittest.TestCase):
         result = self.category_service.get_top_category("nonexistent_user")
         self.assertEqual(result, "Error - user not found")  # 應返回錯誤訊息
 
-    def test_get_top_category_success(self):
-        # 模擬用戶存在且返回最熱門的分類
+    def test_get_top_category_multiple_categories(self):
+        # 模擬用戶存在
         self.user_service.validate_user.return_value = True
-        self.category_repo.get_top_category.return_value = "Electronics"  # 模擬返回熱門分類
+
+        # 模擬分類資料
+        self.category_repo.categories = {
+            "Electronics": [1, 2, 3],  # 3 items
+            "Sports": [4, 5, 6],       # 3 items
+            "Fashion": [7]             # 1 item
+        }
+
+        # 設置 get_top_category 返回正確的結果
+        self.category_repo.get_top_category.return_value = ["Electronics", "Sports"]
+
+        # 應返回擁有最多商品的分類（Electronics 和 Sports），並按字典順序排序
         result = self.category_service.get_top_category("Alice")
-        self.assertEqual(result, "Electronics")  # 應返回 "Electronics"
+        self.assertEqual(result, ["Electronics", "Sports"])
+
+    def test_get_top_category_single_category(self):
+        # 模擬用戶存在
+        self.user_service.validate_user.return_value = True
+
+        # 模擬分類資料
+        self.category_repo.categories = {
+            "Electronics": [1, 2, 3]  # 3 items
+        }
+
+        # 設置 get_top_category 返回正確的結果
+        self.category_repo.get_top_category.return_value = ["Electronics"]
+
+        # 應返回擁有最多商品的唯一分類
+        result = self.category_service.get_top_category("Alice")
+        self.assertEqual(result, ["Electronics"])
+
     
 
 if __name__ == "__main__":

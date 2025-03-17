@@ -31,7 +31,16 @@ class CategoryService:
     def get_top_category(self, username):
         """取得擁有最多商品的分類"""
         if not self.user_service.validate_user(username):
-            return "Error - user not found"
+            return "Error - unknown user"
 
-        top_category = self.category_repo.get_top_category()
-        return top_category if top_category else "Error - no categories"
+        top_categories = self.category_repo.get_top_category()
+
+        # 如果返回的結果是空的，表示沒有分類
+        if not top_categories:
+            return "Error - no categories"
+
+        return top_categories
+    
+    def remove_listing_from_category(self, category, listing_id):
+        """移除商品分類"""
+        self.category_repo.remove_listing_from_category(category, listing_id)
